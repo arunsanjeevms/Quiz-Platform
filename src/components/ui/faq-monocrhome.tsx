@@ -80,6 +80,8 @@ function QuizMonochrome() {
   const [score, setScore] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenMessage, setFullscreenMessage] = useState("");
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -148,6 +150,29 @@ function QuizMonochrome() {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const syncFullscreenState = () => {
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+
+      if (active || stage !== "quiz") {
+        setFullscreenMessage("");
+        return;
+      }
+
+      setFullscreenMessage("Fullscreen is required. Re-enter fullscreen to continue the test.");
+    };
+
+    syncFullscreenState();
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+    };
+  }, [stage]);
+
   const statusClass =
     status.tone === "success" ? palette.success : status.tone === "error" ? palette.error : palette.muted;
 
@@ -167,6 +192,7 @@ function QuizMonochrome() {
   const progressLabel = quizQuestions.length > 0 ? `${currentIndex + 1} / ${quizQuestions.length}` : "0 / 0";
 
   const progressWidth = quizQuestions.length > 0 ? `${((currentIndex + 1) / quizQuestions.length) * 100}%` : "0%";
+  const quizLocked = stage === "quiz" && !isFullscreen;
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -214,10 +240,49 @@ function QuizMonochrome() {
     }
   };
 
-  const startQuiz = () => {
+  const requestQuizFullscreen = async () => {
+    if (typeof document === "undefined") {
+      return false;
+    }
+
+    if (document.fullscreenElement) {
+      setIsFullscreen(true);
+      setFullscreenMessage("");
+      return true;
+    }
+
+    const root = document.documentElement;
+    if (!root.requestFullscreen) {
+      setFullscreenMessage("Your browser does not support fullscreen mode.");
+      return false;
+    }
+
+    try {
+      await root.requestFullscreen();
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+      if (!active) {
+        setFullscreenMessage("Please enter fullscreen to continue the quiz.");
+      } else {
+        setFullscreenMessage("");
+      }
+      return active;
+    } catch (error) {
+      console.error(error);
+      setFullscreenMessage("Fullscreen permission was blocked. Allow fullscreen to continue.");
+      return false;
+    }
+  };
+
+  const startQuiz = async () => {
     if (extractedQuestions.length === 0) {
       setStatus({ tone: "error", text: "Extract questions first." });
       setStage("upload");
+      return;
+    }
+
+    const fullscreenEnabled = await requestQuizFullscreen();
+    if (!fullscreenEnabled) {
       return;
     }
 
@@ -237,7 +302,7 @@ function QuizMonochrome() {
   };
 
   const selectAnswer = (index: number) => {
-    if (!currentQuestion || showAnswer) {
+    if (!currentQuestion || showAnswer || !isFullscreen) {
       return;
     }
 
@@ -250,7 +315,7 @@ function QuizMonochrome() {
   };
 
   const goNext = () => {
-    if (!showAnswer) {
+    if (!showAnswer || !isFullscreen) {
       return;
     }
 
@@ -293,23 +358,22 @@ function QuizMonochrome() {
               } ${palette.muted}`}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
-              NPTEL Quiz Flow
+               Quiz Flow Engine
             </p>
             <h1 className={`text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl ${palette.heading}`}>
-              <span className={introReady ? "quiz-mono-title" : ""}>Your Night-Mode Quiz Engine.</span>
+                          <span className={introReady ? "quiz-mono-title" : ""}>Stop Guessing. Start Mastering !</span>
             </h1>
             <p className={`max-w-2xl text-sm sm:text-base ${palette.muted}`}>
-              Welcome animation, PDF upload, quiz setup with shuffle options, and final score in one guided flow.
-            </p>
+            Built for the last mile of your preparation           </p>
           </div>
 
-          <div className={`relative inline-flex h-12 items-center gap-3 rounded-full border bg-white/10 px-5 text-sm font-medium text-white ${palette.border}`}>
+          {/* <div className={`relative inline-flex h-12 items-center gap-3 rounded-full border bg-white/10 px-5 text-sm font-medium text-white ${palette.border}`}>
             <span className="relative flex h-3 w-3 items-center justify-center">
               <span className="quiz-mono-beacon" aria-hidden="true" />
               <span className="relative h-2.5 w-2.5 rounded-full bg-white" />
             </span>
-            Dark mode locked
-          </div>
+            Dark Mode
+          </div> */}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -476,78 +540,101 @@ function QuizMonochrome() {
                   Back to Upload
                 </button>
               </div>
+
+              <p className={`text-xs uppercase tracking-[0.18em] ${palette.muted}`}>
+                Quiz mode will switch to fullscreen and stay locked until you re-enter fullscreen if you exit.
+              </p>
             </div>
           )}
 
           {stage === "quiz" && currentQuestion && (
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className={`text-xs uppercase tracking-[0.35em] ${palette.muted}`}>Step 4: Quiz Running</p>
-                  <span className={`text-xs font-medium ${palette.muted}`}>{progressLabel}</span>
+            <div className="relative">
+              <div className={`space-y-6 transition-opacity duration-200 ${quizLocked ? "pointer-events-none select-none opacity-35" : ""}`}>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className={`text-xs uppercase tracking-[0.35em] ${palette.muted}`}>Step 4: Quiz Running</p>
+                    <span className={`text-xs font-medium ${palette.muted}`}>{progressLabel}</span>
+                  </div>
+                  <div className={`h-2 overflow-hidden rounded-full border ${palette.border}`}>
+                    <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: progressWidth }} />
+                  </div>
+                  <h2 className={`text-xl font-semibold leading-tight sm:text-3xl ${palette.heading}`}>
+                    {currentQuestion.questionText}
+                  </h2>
                 </div>
-                <div className={`h-2 overflow-hidden rounded-full border ${palette.border}`}>
-                  <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: progressWidth }} />
+
+                <div className="space-y-3">
+                  {currentQuestion.options.map((option, index) => {
+                    const selected = selectedOptionIndex === index;
+                    const showCorrect = showAnswer && option.isCorrect;
+                    const showWrong = showAnswer && selected && !option.isCorrect;
+
+                    const stateClass = showCorrect
+                      ? palette.optionCorrect
+                      : showWrong
+                      ? palette.optionWrong
+                      : palette.option;
+
+                    return (
+                      <button
+                        key={`${currentQuestion.id}-${index}-${option.key}`}
+                        type="button"
+                        onClick={() => selectAnswer(index)}
+                        disabled={showAnswer || quizLocked}
+                        className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition ${stateClass}`}
+                      >
+                        <span className="pt-0.5">
+                          {showCorrect ? (
+                            <CheckCircle2 className="h-5 w-5" />
+                          ) : selected ? (
+                            <CheckCircle2 className="h-5 w-5" />
+                          ) : (
+                            <Circle className="h-5 w-5 opacity-70" />
+                          )}
+                        </span>
+                        <span className="text-sm sm:text-base">{option.text}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <h2 className={`text-xl font-semibold leading-tight sm:text-3xl ${palette.heading}`}>
-                  {currentQuestion.questionText}
-                </h2>
+
+                <div className="min-h-8">
+                  {showAnswer && (
+                    <p className={`text-sm font-medium ${selectedIsCorrect ? palette.success : palette.error}`}>
+                      {selectedIsCorrect ? "Correct answer." : `Wrong answer. Correct option: ${correctOptionText}`}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={!showAnswer || quizLocked}
+                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${palette.primaryButton}`}
+                  >
+                    {isLastQuestion ? <Trophy className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {isLastQuestion ? "Show Result" : "Next Question"}
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                {currentQuestion.options.map((option, index) => {
-                  const selected = selectedOptionIndex === index;
-                  const showCorrect = showAnswer && option.isCorrect;
-                  const showWrong = showAnswer && selected && !option.isCorrect;
-
-                  const stateClass = showCorrect
-                    ? palette.optionCorrect
-                    : showWrong
-                    ? palette.optionWrong
-                    : palette.option;
-
-                  return (
-                    <button
-                      key={`${currentQuestion.id}-${index}-${option.key}`}
-                      type="button"
-                      onClick={() => selectAnswer(index)}
-                      disabled={showAnswer}
-                      className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition ${stateClass}`}
-                    >
-                      <span className="pt-0.5">
-                        {showCorrect ? (
-                          <CheckCircle2 className="h-5 w-5" />
-                        ) : selected ? (
-                          <CheckCircle2 className="h-5 w-5" />
-                        ) : (
-                          <Circle className="h-5 w-5 opacity-70" />
-                        )}
-                      </span>
-                      <span className="text-sm sm:text-base">{option.text}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="min-h-8">
-                {showAnswer && (
-                  <p className={`text-sm font-medium ${selectedIsCorrect ? palette.success : palette.error}`}>
-                    {selectedIsCorrect ? "Correct answer." : `Wrong answer. Correct option: ${correctOptionText}`}
+              {quizLocked && (
+                <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-3xl border bg-black/85 p-6 text-center backdrop-blur-sm ${palette.border}`}>
+                  <p className={`text-sm uppercase tracking-[0.25em] ${palette.muted}`}>Quiz Paused</p>
+                  <h3 className={`text-xl font-semibold ${palette.heading}`}>Return to Fullscreen</h3>
+                  <p className={`max-w-md text-sm ${palette.muted}`}>
+                    {fullscreenMessage || "Fullscreen is required. Re-enter fullscreen to continue the test."}
                   </p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={goNext}
-                  disabled={!showAnswer}
-                  className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${palette.primaryButton}`}
-                >
-                  {isLastQuestion ? <Trophy className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {isLastQuestion ? "Show Result" : "Next Question"}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={requestQuizFullscreen}
+                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition ${palette.primaryButton}`}
+                  >
+                    Continue in Fullscreen
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -584,10 +671,10 @@ function QuizMonochrome() {
                 </button>
               </div>
 
-              <p className={`pt-1 text-xs uppercase tracking-[0.2em] ${palette.muted}`}>
-                Developed by Arun Sanjeev
-              </p>
-            </div>
+                          <p className={`pt-1 text-xs uppercase tracking-[0.1em] ${palette.muted} text-center`}>
+                              Developed by Arun Sanjeev
+                          </p>
+                      </div>
           )}
         </div>
       </section>
