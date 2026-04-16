@@ -396,15 +396,15 @@ function QuizMonochrome() {
           className={`quiz-mono-stage rounded-3xl border p-6 shadow-[0_36px_120px_-65px_rgba(0,0,0,0.9)] sm:p-8 ${palette.panel} ${palette.border}`}
         >
           {stage === "welcome" && (
-            <div className="flex min-h-[330px] flex-col items-start justify-center gap-8">
+            <div className="flex min-h-[330px] flex-col items-center justify-center gap-8 text-center">
               <p className={`text-xs uppercase tracking-[0.35em] ${palette.muted}`}>Step 1: Welcome Animation</p>
-              <div className="space-y-5">
+              <div className="space-y-5 text-center">
                 <h2 className={`text-3xl font-semibold leading-tight sm:text-5xl ${palette.heading}`}>
                   <span className="quiz-mono-quote">Memorize Smarter,</span>
                   <br />
                   <span className="quiz-mono-quote">Not Harder.</span>
                 </h2>
-                <p className={`max-w-2xl text-sm sm:text-lg ${palette.muted}`}>
+                <p className={`mx-auto max-w-2xl text-center text-sm sm:text-lg ${palette.muted}`}>
                   This flow is tuned for last-night revision: import your answer-key PDF, randomize quiz behavior, and
                   get immediate correct or wrong feedback.
                 </p>
