@@ -11,9 +11,17 @@ body,
 #root {
   width: 100%;
   min-height: 100%;
+  background: #000;
 }
 
 body {
   margin: 0;
   font-family: Inter, "Segoe UI", sans-serif;
+  color-scheme: dark;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100vh;
 }

@@ -1,12 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   CheckCircle2,
   Circle,
   FileUp,
-  MoonStar,
   Play,
   Shuffle,
-  SunMedium,
   Trophy,
   UploadCloud,
 } from "lucide-react";
@@ -25,7 +23,6 @@ const stageLabels = [
   { id: "result", label: "Result" },
 ] as const;
 
-type ThemeMode = "dark" | "light";
 type Stage = (typeof stageLabels)[number]["id"];
 type StatusTone = "muted" | "success" | "error";
 
@@ -41,69 +38,29 @@ type QuizQuestion = {
   options: QuizOption[];
 };
 
-const palettes = {
-  dark: {
-    surface: "bg-neutral-950 text-neutral-100",
-    panel: "bg-neutral-900/55",
-    border: "border-white/10",
-    heading: "text-white",
-    muted: "text-neutral-400",
-    toggle: "border-white/20 text-white",
-    toggleSurface: "bg-white/10",
-    stepActive: "border-white bg-white text-black",
-    stepDone: "border-emerald-300/50 bg-emerald-300/15 text-emerald-100",
-    stepIdle: "border-white/20 bg-white/5 text-neutral-300",
-    primaryButton: "bg-white text-black hover:bg-neutral-200",
-    secondaryButton: "border-white/25 bg-white/10 text-white hover:bg-white/20",
-    input: "border-white/20 bg-black/30 text-white file:text-neutral-300",
-    option: "border-white/15 bg-white/[0.03] hover:border-white/30",
-    optionCorrect: "border-emerald-300/45 bg-emerald-400/15",
-    optionWrong: "border-rose-300/45 bg-rose-400/15",
-    success: "text-emerald-300",
-    error: "text-rose-300",
-    glow: "rgba(255,255,255,0.08)",
-    aurora:
-      "radial-gradient(ellipse 60% 100% at 10% 0%, rgba(226, 232, 240, 0.15), transparent 64%), #000000",
-    overlay: "linear-gradient(130deg, rgba(255,255,255,0.05) 0%, transparent 65%)",
-  },
-  light: {
-    surface: "bg-slate-100 text-neutral-900",
-    panel: "bg-white/70",
-    border: "border-neutral-200",
-    heading: "text-neutral-900",
-    muted: "text-neutral-600",
-    toggle: "border-neutral-200 text-neutral-900",
-    toggleSurface: "bg-white",
-    stepActive: "border-neutral-900 bg-neutral-900 text-white",
-    stepDone: "border-emerald-600/40 bg-emerald-100 text-emerald-900",
-    stepIdle: "border-neutral-300 bg-white text-neutral-600",
-    primaryButton: "bg-neutral-900 text-white hover:bg-neutral-700",
-    secondaryButton: "border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-100",
-    input: "border-neutral-300 bg-white text-neutral-900 file:text-neutral-600",
-    option: "border-neutral-300 bg-white/80 hover:border-neutral-500",
-    optionCorrect: "border-emerald-600/40 bg-emerald-100",
-    optionWrong: "border-rose-600/35 bg-rose-100",
-    success: "text-emerald-700",
-    error: "text-rose-700",
-    glow: "rgba(15,15,15,0.08)",
-    aurora:
-      "radial-gradient(ellipse 60% 100% at 10% 0%, rgba(15, 23, 42, 0.08), rgba(255, 255, 255, 0.98) 70%)",
-    overlay: "linear-gradient(130deg, rgba(15,23,42,0.08) 0%, transparent 70%)",
-  },
+const palette = {
+  surface: "bg-neutral-950 text-neutral-100",
+  panel: "bg-neutral-900/55",
+  border: "border-white/10",
+  heading: "text-white",
+  muted: "text-neutral-400",
+  stepActive: "border-white bg-white text-black",
+  stepDone: "border-emerald-300/50 bg-emerald-300/15 text-emerald-100",
+  stepIdle: "border-white/20 bg-white/5 text-neutral-300",
+  primaryButton: "bg-white text-black hover:bg-neutral-200",
+  secondaryButton: "border-white/25 bg-white/10 text-white hover:bg-white/20",
+  input: "border-white/20 bg-black/30 text-white file:text-neutral-300",
+  option: "border-white/15 bg-white/[0.03] hover:border-white/30",
+  optionCorrect: "border-emerald-300/45 bg-emerald-400/15",
+  optionWrong: "border-rose-300/45 bg-rose-400/15",
+  success: "text-emerald-300",
+  error: "text-rose-300",
+  aurora:
+    "radial-gradient(ellipse 60% 100% at 10% 0%, rgba(226, 232, 240, 0.15), transparent 64%), #000000",
+  overlay: "linear-gradient(130deg, rgba(255,255,255,0.05) 0%, transparent 65%)",
 } as const;
 
 function QuizMonochrome() {
-  const getRootTheme = (): ThemeMode => {
-    if (typeof document === "undefined") return "dark";
-    if (document.documentElement.classList.contains("dark")) return "dark";
-    if (document.documentElement.classList.contains("light")) return "light";
-    if (typeof window !== "undefined" && window.matchMedia) {
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-    return "dark";
-  };
-
-  const [theme, setTheme] = useState<ThemeMode>(getRootTheme);
   const [stage, setStage] = useState<Stage>("welcome");
   const [introReady, setIntroReady] = useState(false);
 
@@ -124,10 +81,10 @@ function QuizMonochrome() {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
 
-  const palette = useMemo(() => palettes[theme], [theme]);
-
   useEffect(() => {
     if (typeof document === "undefined") return;
+    document.documentElement.classList.add("dark");
+    document.documentElement.classList.remove("light");
     if (document.getElementById(INTRO_STYLE_ID)) return;
 
     const style = document.createElement("style");
@@ -146,6 +103,10 @@ function QuizMonochrome() {
         50% { transform: scale(1.15); opacity: 0.12; }
         100% { transform: scale(1.35); opacity: 0; }
       }
+      @keyframes quiz-mono-quote-fade {
+        0%, 100% { opacity: 0.45; transform: translate3d(0, 8px, 0); }
+        50% { opacity: 1; transform: translate3d(0, 0, 0); }
+      }
       .quiz-mono-stage {
         animation: quiz-mono-fade-up 620ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
       }
@@ -157,10 +118,8 @@ function QuizMonochrome() {
         color: transparent;
         animation: quiz-mono-shimmer 4.8s linear infinite;
       }
-      .light .quiz-mono-title,
-      html:not(.dark) .quiz-mono-title {
-        background: linear-gradient(110deg, rgba(15,23,42,0.35) 10%, rgba(15,23,42,0.95) 45%, rgba(15,23,42,0.35) 72%);
-        background-size: 220% 100%;
+      .quiz-mono-quote {
+        animation: quiz-mono-quote-fade 3.8s ease-in-out infinite;
       }
       .quiz-mono-beacon {
         position: absolute;
@@ -169,10 +128,6 @@ function QuizMonochrome() {
         border: 1px solid rgba(255,255,255,0.2);
         animation: quiz-mono-beacon 2.6s ease-out infinite;
         pointer-events: none;
-      }
-      .light .quiz-mono-beacon,
-      html:not(.dark) .quiz-mono-beacon {
-        border-color: rgba(15,23,42,0.2);
       }
     `;
 
@@ -192,41 +147,6 @@ function QuizMonochrome() {
     const frame = window.requestAnimationFrame(() => setIntroReady(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-
-    const applyThemeFromRoot = () => setTheme(getRootTheme());
-
-    applyThemeFromRoot();
-
-    const observer = new MutationObserver(applyThemeFromRoot);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class", "data-theme"],
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  const toggleTheme = () => {
-    if (typeof document === "undefined") return;
-
-    const root = document.documentElement;
-    const next: ThemeMode = root.classList.contains("dark") ? "light" : "dark";
-
-    root.classList.toggle("dark", next === "dark");
-    root.classList.toggle("light", next === "light");
-    setTheme(next);
-
-    try {
-      window.localStorage.setItem("bento-theme", next);
-    } catch (_err) {
-      // Ignore storage persistence failures.
-    }
-  };
 
   const statusClass =
     status.tone === "success" ? palette.success : status.tone === "error" ? palette.error : palette.muted;
@@ -361,7 +281,7 @@ function QuizMonochrome() {
       />
       <div
         className="pointer-events-none absolute inset-0 z-0 opacity-80"
-        style={{ background: palette.overlay, mixBlendMode: theme === "dark" ? "screen" : "multiply" }}
+        style={{ background: palette.overlay, mixBlendMode: "screen" }}
       />
 
       <section className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-14 lg:px-12 lg:py-20">
@@ -372,29 +292,24 @@ function QuizMonochrome() {
                 palette.border
               } ${palette.muted}`}
             >
-              <span className={`h-1.5 w-1.5 rounded-full ${theme === "dark" ? "bg-white" : "bg-neutral-900"}`} />
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
               NPTEL Quiz Flow
             </p>
             <h1 className={`text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl ${palette.heading}`}>
-              <span className={introReady ? "quiz-mono-title" : ""}>Memorize Smarter, Not Harder.</span>
+              <span className={introReady ? "quiz-mono-title" : ""}>Your Night-Mode Quiz Engine.</span>
             </h1>
             <p className={`max-w-2xl text-sm sm:text-base ${palette.muted}`}>
               Welcome animation, PDF upload, quiz setup with shuffle options, and final score in one guided flow.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className={`relative inline-flex h-12 items-center gap-3 rounded-full border px-5 text-sm font-medium transition-colors duration-500 ${palette.toggleSurface} ${palette.toggle}`}
-            aria-pressed={theme === "dark" ? "true" : "false"}
-          >
-            <span className="relative flex h-6 w-6 items-center justify-center">
+          <div className={`relative inline-flex h-12 items-center gap-3 rounded-full border bg-white/10 px-5 text-sm font-medium text-white ${palette.border}`}>
+            <span className="relative flex h-3 w-3 items-center justify-center">
               <span className="quiz-mono-beacon" aria-hidden="true" />
-              {theme === "dark" ? <MoonStar className="relative h-4 w-4" /> : <SunMedium className="relative h-4 w-4" />}
+              <span className="relative h-2.5 w-2.5 rounded-full bg-white" />
             </span>
-            {theme === "dark" ? "Night" : "Day"} mode
-          </button>
+            Dark mode locked
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -422,9 +337,9 @@ function QuizMonochrome() {
               <p className={`text-xs uppercase tracking-[0.35em] ${palette.muted}`}>Step 1: Welcome Animation</p>
               <div className="space-y-5">
                 <h2 className={`text-3xl font-semibold leading-tight sm:text-5xl ${palette.heading}`}>
-                  Focus on the signal,
+                  <span className="quiz-mono-quote">Memorize Smarter,</span>
                   <br />
-                  not the noise.
+                  <span className="quiz-mono-quote">Not Harder.</span>
                 </h2>
                 <p className={`max-w-2xl text-sm sm:text-lg ${palette.muted}`}>
                   This flow is tuned for last-night revision: import your answer-key PDF, randomize quiz behavior, and
@@ -572,7 +487,7 @@ function QuizMonochrome() {
                   <span className={`text-xs font-medium ${palette.muted}`}>{progressLabel}</span>
                 </div>
                 <div className={`h-2 overflow-hidden rounded-full border ${palette.border}`}>
-                  <div className="h-full rounded-full bg-white transition-all duration-500 dark:bg-neutral-100" style={{ width: progressWidth }} />
+                  <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: progressWidth }} />
                 </div>
                 <h2 className={`text-xl font-semibold leading-tight sm:text-3xl ${palette.heading}`}>
                   {currentQuestion.questionText}
@@ -668,6 +583,10 @@ function QuizMonochrome() {
                   Upload Another PDF
                 </button>
               </div>
+
+              <p className={`pt-1 text-xs uppercase tracking-[0.2em] ${palette.muted}`}>
+                Developed by Arun Sanjeev
+              </p>
             </div>
           )}
         </div>
