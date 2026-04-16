@@ -4,7 +4,7 @@ import path from 'node:path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/Quiz_Platform/',
+  base: '/Quiz-Platform/',
   plugins: [react()],
   resolve: {
     alias: {
