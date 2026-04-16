@@ -8,9 +8,9 @@ import {
   Trophy,
   UploadCloud,
 } from "lucide-react";
-import { GlobalWorkerOptions, getDocument } from "pdfjs-dist";
+import { GlobalWorkerOptions, getDocument, version as pdfjsVersion } from "pdfjs-dist";
 
-GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs";
+GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
 
 const INTRO_STYLE_ID = "quiz-mono-animations";
 
